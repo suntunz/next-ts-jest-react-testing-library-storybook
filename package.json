@@ -8,6 +8,7 @@
     "lint": "next lint --dir src",
     "validate": "npm ls",
     "test": "jest",
+    "test:watch": "jest --watch",
     "test:ci": "jest --coverage --silent --ci"
   },
   "dependencies": {

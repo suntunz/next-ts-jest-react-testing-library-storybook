@@ -35,7 +35,7 @@ const Counter = ({ description, defaultCount }: CounterProps) => {
         </label>
       </div>
 
-      <button type="button" aria-label="Decrement" onClick={() => handlerSetCount()}> - </button>
+      <button type="button" aria-label="Decrement" onClick={() => setTimeout(() => handlerSetCount(), 1000)}> - </button>
       <button type="button" aria-label="Increment" onClick={() => setCount(count + incrementor)}> + </button>
     </div>
   )

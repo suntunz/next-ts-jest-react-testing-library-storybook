@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import React from 'react'
 import userEvent from '@testing-library/user-event'
 import Counter from './Counter'
@@ -15,10 +15,26 @@ const renderCounter = (args: RenderCounterArgs = {}) => {
 
   const getText = (text: string | RegExp) => screen.getByText(text)
   const getButton = (options: object = {}) => screen.getByRole('button', options)
+  const getInputIncrementor = () => screen.getByLabelText(/incrementor/i)
+
+  interface ActionsType {
+    userTyping?: {
+      text: string
+    }
+    userClick?: {
+      buttonName: string
+    }
+  }
+  const runUserJourney = (actions: ActionsType) => {
+    if (actions.userTyping) userEvent.type(getInputIncrementor(), actions.userTyping.text)
+    if (actions.userClick) userEvent.click(getButton({ name: actions.userClick.buttonName }))
+  }
 
   return {
     getText,
-    getButton
+    getButton,
+    getInputIncrementor,
+    runUserJourney
   }
 }
 
@@ -37,58 +53,72 @@ describe('Counter component', () => {
 
     describe('when user input and click actions', () => {
       it('user typing "20" into label input incrementor', () => {
-        renderCounter({ description: 'Step Counter', defaultCount: 10 })
-        const input = screen.getByLabelText(/incrementor/i)
-        userEvent.type(input, '{selectall}20')
-        expect(input).toHaveValue('20')
+        const { getInputIncrementor, runUserJourney } = renderCounter(
+          { description: 'Step Counter', defaultCount: 10 }
+        )
+        runUserJourney({ userTyping: { text: '{selectall}20' } })
+        expect(getInputIncrementor()).toHaveValue('20')
       })
 
-      it('user typing text "anythings" into label input incrementor must be not Nan', () => {
-        renderCounter({ description: 'Step Counter', defaultCount: 10 })
-        const input = screen.getByLabelText(/incrementor/i)
-        userEvent.type(input, '{selectall}anythings')
-        expect(input).not.toBeNaN()
+      it('user typing text "anythings" into label input incrementor must be not NaN', () => {
+        const { getInputIncrementor, runUserJourney } = renderCounter(
+          { description: 'Step Counter', defaultCount: 10 }
+        )
+        runUserJourney({ userTyping: { text: '{selectall}anythings' } })
+        expect(getInputIncrementor()).not.toBeNaN()
       })
 
       it('user typing text "anythings" into label input incrementor must be greater than or equal 0', () => {
-        renderCounter({ description: 'Step Counter', defaultCount: 10 })
-        const input = screen.getByLabelText(/incrementor/i)
-        userEvent.type(input, '{selectall}anythings')
-        const parseIntValue = parseInt((input as HTMLInputElement).value, 10)
+        const { getInputIncrementor, runUserJourney } = renderCounter(
+          { description: 'Step Counter', defaultCount: 10 }
+        )
+        runUserJourney({ userTyping: { text: '{selectall}anythings' } })
+
+        const parseIntValue = parseInt((getInputIncrementor() as HTMLInputElement).value, 10)
         expect(parseIntValue).toBeGreaterThanOrEqual(0)
       })
 
       it('when increment changes to 5 and "+" button is clicked', () => {
-        const { getText, getButton } = renderCounter(
+        const { getText, runUserJourney } = renderCounter(
           { description: 'Step Counter', defaultCount: 10 }
         )
 
-        userEvent.type(screen.getByLabelText(/incrementor/i), '{selectall}5')
-        userEvent.click(getButton({ name: 'Increment' }))
+        runUserJourney({
+          userTyping: { text: '{selectall}5' },
+          userClick: { buttonName: 'Increment' }
+        })
 
         expect(getText(/current count: 15/i)).toBeInTheDocument()
       })
 
-      it('when decrement changes to 5 and "-" button is clicked', () => {
-        const { getText, getButton } = renderCounter(
+      it('when decrement changes to 5 and "-" button is clicked', async () => {
+        const { getText, runUserJourney } = renderCounter(
           { description: 'Step Counter', defaultCount: 10 }
         )
 
-        userEvent.type(screen.getByLabelText(/incrementor/i), '{selectall}5')
-        userEvent.click(getButton({ name: 'Decrement' }))
+        runUserJourney({
+          userTyping: { text: '{selectall}5' },
+          userClick: { buttonName: 'Decrement' }
+        })
 
-        expect(getText(/current count: 5/i)).toBeInTheDocument()
+        await waitFor(() => {
+          expect(getText(/current count: 5/i)).toBeInTheDocument()
+        }, { timeout: 1000 })
       })
 
-      it('when decrement changes the minimun number must be 0', () => {
-        const { getText, getButton } = renderCounter(
+      it('when decrement changes the minimun number must be 0', async () => {
+        const { getText, runUserJourney } = renderCounter(
           { description: 'Step Counter', defaultCount: 10 }
         )
 
-        userEvent.type(screen.getByLabelText(/incrementor/i), '{selectall}15')
-        userEvent.click(getButton({ name: 'Decrement' }))
+        runUserJourney({
+          userTyping: { text: '{selectall}15' },
+          userClick: { buttonName: 'Decrement' }
+        })
 
-        expect(getText(/current count: 0/i)).toBeInTheDocument()
+        await waitFor(() => {
+          expect(getText(/current count: 0/i)).toBeInTheDocument()
+        }, { timeout: 1000 })
       })
     })
   })
